@@ -55,10 +55,10 @@ public:
     }
     uintptr_t readptrs(std::vector<uint64_t> addrs){
         uintptr_t result = parse<uintptr_t>(addrs[0],8);
-        for(int i = 1; i < addrs.size(); i++){
+        for(int i = 1; i < addrs.size()-1; i++){
             result = parse<uintptr_t>(result + addrs[i],8);
         }
-        return result;
+        return result+addrs[addrs.size()];
     }
     int readint(uint64_t addr){
         return parse<int>(addr,4);
