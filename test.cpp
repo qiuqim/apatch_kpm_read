@@ -78,13 +78,13 @@ int main() {
     ss << std::hex << base;
     std::cout << "mt1.so base: " << ss.str() << std::endl;
     std::cout<<"开始读取"<<std::endl;
-    int a = mem.parse<int>(base,4);
+    int a = mem.parse<int>(base);
     std::cout << "int: " << a << std::endl;
-    uintptr_t b = mem.parse<uintptr_t>(base,8);
+    uintptr_t b = mem.parse<uintptr_t>(base);
     std::cout << "ptr: " << b << std::endl;
-    float c = mem.parse<float>(base,4);
+    float c = mem.parse<float>(base);
     std::cout << "float: " << c << std::endl;
-    double d = mem.parse<double>(base,8);
+    double d = mem.parse<double>(base);
     std::cout << "double: " << d << std::endl;
 
 
