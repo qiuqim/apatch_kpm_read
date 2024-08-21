@@ -35,13 +35,13 @@ public:
     }
     //解析字节码
     template<typename T>
-    T parse(uint64_t addr,int size){
+    T parse(uint64_t addr){
         if(!addr)return 0;
         //addr 转成16进制字符串
         std::stringstream ss;
         ss << std::hex << addr;
         std::cout << "addr: " << ss.str() << std::endl;
-        std::string args = std::to_string(_pid) + "_" + ss.str() + "_" + std::to_string(size);
+        std::string args = std::to_string(_pid) + "_" + ss.str() + "_" + std::to_string(sizeof(T));
         std::string result = read(args);
         if(result.empty()){
             return 0;
@@ -51,23 +51,23 @@ public:
     }
 
     uintptr_t readptr(uint64_t addr){
-        return parse<uintptr_t>(addr,8);
+        return parse<uintptr_t>(addr);
     }
     uintptr_t readptrs(std::vector<uint64_t> addrs){
-        uintptr_t result = parse<uintptr_t>(addrs[0],8);
+        uintptr_t result = parse<uintptr_t>(addrs[0]);
         for(int i = 1; i < addrs.size()-1; i++){
-            result = parse<uintptr_t>(result + addrs[i],8);
+            result = parse<uintptr_t>(result + addrs[i]);
         }
         return result+addrs[addrs.size()];
     }
     int readint(uint64_t addr){
-        return parse<int>(addr,4);
+        return parse<int>(addr);
     }
     float readfloat(uint64_t addr){
-        return parse<float>(addr,4);
+        return parse<float>(addr);
     }
     double readdouble(uint64_t addr){
-        return parse<double>(addr,8);
+        return parse<double>(addr);
     }
 
     std::string  loadkpm(std::string path,std::string args){
