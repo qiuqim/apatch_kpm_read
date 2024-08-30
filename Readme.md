@@ -22,3 +22,7 @@ ap supercall调用ctl也只能遍历链表获取函数指针进行使用，特�
 我想说的是，模块编写完善可以无需拉内核源码，直接编译通用模块加载即可
 
 一些骚操作欢迎留言补充，我也学一下
+
+ telegram:
+ [t.me/kpm_kread](https://t.me/kpm_kread)
+
