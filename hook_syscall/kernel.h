@@ -80,6 +80,7 @@ public:
     // ret = sc_kpm_control(key.c_str(),"kpm_kread","555",0,0);
     // kernel k(0x555);
     //剩下的自己优化吧
+    //注意必须先自己注册一个命令号，不然后面都用不了
     int cmd_ctl(std::string key, std::string  cmd){
         if(key.empty()) return -1;
         if(cmd.empty()) return -1;
