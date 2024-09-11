@@ -1,7 +1,9 @@
 hook 系统调用 实现更多目标操作
 
+需要card验证
 
 测试卡
+
 5b0cf287a611d703
 bff29b73d1b577de
 f4b0c0cb247ee7e0
