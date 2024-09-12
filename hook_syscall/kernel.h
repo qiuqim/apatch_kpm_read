@@ -62,6 +62,7 @@ static inline long compact_cmd(const char *key, long cmd)
 }
 
 struct kpm_read{
+    int key;
     int pid;
     uint64_t addr;
     int size;
@@ -76,25 +77,28 @@ private:
     struct kpm_read kread;
     
 public:
-    //自定义的传参命令  super_key     self_cmd = 555   cmd_read = 0x555
-    // ret = sc_kpm_control(key.c_str(),"kpm_kread","555",0,0);
-    // kernel k(0x555);
+     //自定义的传参命令  super_key     self_cmd = 555   cmd_read = 0x555 
+    // key_vertify ="111"  kread.key=111
+    // ret = sc_kpm_control(key.c_str(),"kpm_kread","555_111",0,0);
+    // kernel k(0x555,111);
     //剩下的自己优化吧
-    //注意必须先自己注册一个命令号，不然后面都用不了
-    int cmd_ctl(std::string key, std::string  cmd){
+    int cmd_ctl(std::string key, std::string cmd,std::string key_vertify){
         if(key.empty()) return -1;
-        if(cmd.empty()) return -1;
-        long ret = syscall(__NR_supercall, key.c_str() , compact_cmd(key.c_str(), SUPERCALL_KPM_CONTROL), "kpm_kread", cmd.c_str(), 0, 0);
+        if(cmd.empty() || key_vertify.empty()) return -1;
+        std::string key_cmd = cmd + "_" + key_vertify;
+
+        long ret = syscall(__NR_supercall, key.c_str() , compact_cmd(key.c_str(), SUPERCALL_KPM_CONTROL), "kpm_kread", key_cmd.c_str(), 0, 0);
 
         return ret;
     }
 
 
 
-    //自定义的传参命令
-    kernel(uint64_t cmd){
+    //自定义的传参命令 此key为随意数字
+    kernel(uint64_t cmd,int key){
         cmd_read = cmd;//十六进制 
         cmd_write = cmd + 1;
+        kread.key = key;//十进制
     };
 
     void set_pid(int pid){
@@ -104,7 +108,7 @@ public:
     template<typename T>
     T read(uint64_t addr){
         T data;
-        kread.addr = addr;
+        kread.addr = addr & 0xffffffffffff;
         kread.size = sizeof(T);
         kread.buffer = &data;
         int ret = ioctl(-1,cmd_read,&kread)
@@ -113,7 +117,7 @@ public:
 
     template<typename T>
     bool write(uint64_t addr, T data){
-        kread.addr = addr;
+        kread.addr = addr  & 0xffffffffffff;
         kread.size = sizeof(T);
         kread.buffer = &data;
         int ret = ioctl(-1,cmd_write,&kread)
