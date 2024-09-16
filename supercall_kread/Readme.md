@@ -1,7 +1,9 @@
 
 通过ap的supercall进行调用模块
 
-参数 pid_0xaddr(十六进制形式)_size
+读取参数 0pid_0xaddr(十六进制形式)_size
+
+读取基地址 1pid_name
 
 圈子太乱了，就不想开源了,而且进行了一点简单的混淆
 
