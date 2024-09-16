@@ -11,32 +11,32 @@ class Mem {
     std::string _key;
     std::string _path;
     std::string _args;
-    std::string _name;
+    std::string _name = "kpmreadv";
     int _pid;
    // char result[4096];
 public:
-    Mem(std::string key,std::string name): _key(key),_name(name) {}
+    Mem(std::string key): _key(key) {}
     //ctl0 name args "pid_addr_size"
-    std::string read(std::string args,int size){
-        if(args.empty()){
-            return "";
-        }
-        if(size > 4096){
-            return "size too big";
-        }
-        char result[4096];
-        memset(result,0,4096);
-        long ret = sc_kpm_control(_key.c_str(),_name.c_str(),args.c_str(),result,sizeof(result));
-        if(ret < 0){
-            return "";
-        }
-        //打印字节码
-//        std::cout << "字节码: \n";
-//        for(int i = 0; i < 4096; i++){
-//            printf("%02x ",result[i]);
-//        }
-        return std::string(result,size);
-    }
+//     std::string read(std::string args,int size){
+//         if(args.empty()){
+//             return "";
+//         }
+//         if(size > 4096){
+//             return "size too big";
+//         }
+//         char result[4096];
+//         memset(result,0,4096);
+//         long ret = sc_kpm_control(_key.c_str(),_name.c_str(),args.c_str(),result,sizeof(result));
+//         if(ret < 0){
+//             return "";
+//         }
+//         //打印字节码
+// //        std::cout << "字节码: \n";
+// //        for(int i = 0; i < 4096; i++){
+// //            printf("%02x ",result[i]);
+// //        }
+//         return std::string(result,size);
+//     }
 
     bool read(std::string args,unsigned char* result,int size){
         if(args.empty()){
@@ -53,7 +53,20 @@ public:
         return 1 ;
     }
 
+    //获取模块基址    //1pid_name   /a/b/c/d/libxxx.so name = libxxx.so
+    uint64_t get_module_base(std::string name){
+        uint64_t base = 0;
+        if(name.empty()){
+            return 0;
+        }
+        std::string cmd = "1"+std::to_string(_pid) + "_" + name;
 
+        long ret = sc_kpm_control(_key.c_str(),name.c_str(),cmd.c_str(),(char*)&base,sizeof(base));
+        if(ret < 0){
+            return 0;
+        }
+        return base;
+    }
 
     void ini(int pid){
         this->_pid = pid;
@@ -66,7 +79,7 @@ public:
         std::stringstream ss;
         ss << std::hex << addr;
         //std::cout << "addr: " << ss.str() << std::endl;
-        std::string args = std::to_string(_pid) + "_" + ss.str() + "_" + std::to_string(sizeof(T));
+        std::string args = "0" +std::to_string(_pid) + "_" + ss.str() + "_" + std::to_string(sizeof(T));
 //        std::string result = read(args,sizeof(T));
 //        if(result.empty()){
 //            return 0;
@@ -141,6 +154,7 @@ public:
     }
 
 };
+
 
 
 
