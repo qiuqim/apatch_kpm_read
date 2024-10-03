@@ -5,7 +5,7 @@ device----------创建驱动设备
 
 hw_bp----------断点实现
 
-hook_syscall----hook系统调用实现读写拦截
+hook_syscall----hook系统调用实现拦截
 
 supercall-------ap提供的系统调用接口
 
