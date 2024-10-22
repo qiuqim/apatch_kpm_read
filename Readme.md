@@ -18,5 +18,5 @@ supercall-------ap提供的系统调用接口
 # 不要乱刷内核模块 以及非官方编译的app
 
 ### telegram:
- [t.me/kpm_kread](https://t.me/kpm_kread)
+ [t.me/ap_kread](https://t.me/ap_kread)
 
