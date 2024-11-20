@@ -61,30 +61,42 @@ static inline long compact_cmd(const char *key, long cmd)
     return hash_key_cmd(key, cmd);
 }
 
-struct kpm_read{
-    int key;
+struct kpm_read
+{
+     int key;
     int pid;
     uint64_t addr;
     int size;
     void *buffer;
+
 };
+
+struct kpm_mod
+{
+     int key;
+    int pid;
+    uintptr_t base;
+    char *name;
+};
+
 
 class kernel
 {
 private:
     uint64_t cmd_read;
     uint64_t cmd_write;
+    uint64_t cmd_mod;
     struct kpm_read kread;
-    
+    struct kpm_mod kmod;
 public:
-     //自定义的传参命令  super_key     self_cmd = 555   cmd_read = 0x555 
-    // key_vertify ="111"  kread.key=111
+     //自定义的传参命令  readcmd_keyvertify -? "555_111"
+    //readcmd = "555"        readcmd = 0x555 
+    // keyvertify ="111"     kread.key=0x111
     // ret = sc_kpm_control(key.c_str(),"kpm_kread","555_111",0,0);
-    // kernel k(0x555,111);
+    // kernel k(0x555,0x111);
     //剩下的自己优化吧
     int cmd_ctl(std::string key, std::string cmd,std::string key_vertify){
-        if(key.empty()) return -1;
-        if(cmd.empty() || key_vertify.empty()) return -1;
+        if(cmd.empty() || key_vertify.empty() || key.empty()) return -1;
         std::string key_cmd = cmd + "_" + key_vertify;
 
         long ret = syscall(__NR_supercall, key.c_str() , compact_cmd(key.c_str(), SUPERCALL_KPM_CONTROL), "kpm_kread", key_cmd.c_str(), 0, 0);
@@ -98,7 +110,9 @@ public:
     kernel(uint64_t cmd,int key){
         cmd_read = cmd;//十六进制 
         cmd_write = cmd + 1;
-        kread.key = key;//十进制
+        cmd_mod = cmd + 2;
+        kread.key = key;//十六进制
+        kmod.key = key;
     };
 
     void set_pid(int pid){
