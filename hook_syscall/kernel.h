@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <unistd.h>
 #include <string>
+#include <iostream>
 
 #define MAJOR 0
 #define MINOR 11
@@ -44,11 +45,11 @@ static inline long hash_key(const char *key)
 static inline long hash_key_cmd(const char *key, long cmd)
 {
     long hash = hash_key(key);
-    return hash & 0xFFFF0000 | cmd;
+    return (hash & 0xFFFF0000) | cmd;
 }
 
 // ge 0a05
-static inline long ver_and_cmd(const char *key, long cmd)
+static inline long ver_and_cmd( long cmd)
 {
     uint32_t version_code = (MAJOR << 16) + (MINOR << 8) + PATCH;
     return ((long)version_code << 32) | (0x1158 << 16) | (cmd & 0xFFFF);
@@ -56,41 +57,44 @@ static inline long ver_and_cmd(const char *key, long cmd)
 
 static inline long compact_cmd(const char *key, long cmd)
 {
-    long ver = syscall(__NR_supercall, key, ver_and_cmd(key, SUPERCALL_KERNELPATCH_VER));
-    if (ver >= 0xa05) return ver_and_cmd(key, cmd);
+    long ver = syscall(__NR_supercall, key, ver_and_cmd( SUPERCALL_KERNELPATCH_VER));
+    if (ver >= 0xa05) return ver_and_cmd( cmd);
     return hash_key_cmd(key, cmd);
 }
 
-struct kpm_read
-{
-     int key;
-    int pid;
-    uint64_t addr;
-    int size;
-    void *buffer;
 
-};
-
-struct kpm_mod
-{
-     int key;
-    int pid;
-    uintptr_t base;
-    char *name;
-};
 
 
 class kernel
 {
 private:
+    struct kpm_read
+    {
+        uint64_t key;
+        int pid;
+        int size;
+        uint64_t addr;
+        void *buffer;
+
+    };
+
+    struct kpm_mod
+    {
+        uint64_t key;
+        int pid;
+        char *name;
+        uintptr_t base;
+
+    };
     uint64_t cmd_read;
     uint64_t cmd_write;
     uint64_t cmd_mod;
     struct kpm_read kread;
     struct kpm_mod kmod;
+
 public:
-     //自定义的传参命令  readcmd_keyvertify -? "555_111"
-    //readcmd = "555"        readcmd = 0x555 
+    //自定义的传参命令  readcmd_keyvertify -? "555_111"
+    //readcmd = "555"        readcmd = 0x555
     // keyvertify ="111"     kread.key=0x111
     // ret = sc_kpm_control(key.c_str(),"kpm_kread","555_111",0,0);
     // kernel k(0x555,0x111);
@@ -104,11 +108,11 @@ public:
         return ret;
     }
 
-
+    kernel(){};
 
     //自定义的传参命令 此key为随意数字
-    kernel(uint64_t cmd,int key){
-        cmd_read = cmd;//十六进制 
+    void init(uint64_t cmd,uint64_t key){
+        cmd_read = cmd;//十六进制
         cmd_write = cmd + 1;
         cmd_mod = cmd + 2;
         kread.key = key;//十六进制
@@ -117,6 +121,7 @@ public:
 
     void set_pid(int pid){
         kread.pid = pid;
+        kmod.pid = pid;
     }
 
     template<typename T>
@@ -125,8 +130,33 @@ public:
         kread.addr = addr & 0xffffffffffff;
         kread.size = sizeof(T);
         kread.buffer = &data;
-        int ret = ioctl(-1,cmd_read,&kread)
+        int ret = ioctl(-1,cmd_read,&kread);
+        if(ret<0){
+            //注意 这里物理页缺失会反 -1 可以自己去掉提示
+            std::cout<<"read error maybe pa false"<<std::endl;
+            return 0;
+        }
         return data;
+    }
+
+    void read(uint64_t addr, void *buffer, int size){
+        kread.addr = addr & 0xffffffffffff;
+        kread.size = size;
+        kread.buffer = buffer;
+        int ret = ioctl(-1,cmd_read,&kread);
+        if(ret<0){
+            std::cout<<"read error"<<std::endl;
+        }
+    }
+
+    void write(uint64_t addr,  void *buffer, int size){
+        kread.addr = addr & 0xffffffffffff;
+        kread.size = size;
+        kread.buffer = buffer;
+        int ret = ioctl(-1,cmd_write,&kread);
+        if(ret<0){
+            std::cout<<"write error"<<std::endl;
+        }
     }
 
     template<typename T>
@@ -134,14 +164,54 @@ public:
         kread.addr = addr  & 0xffffffffffff;
         kread.size = sizeof(T);
         kread.buffer = &data;
-        int ret = ioctl(-1,cmd_write,&kread)
+        int ret = ioctl(-1,cmd_write,&kread);
+        if(ret<0){
+            std::cout<<"write error"<<std::endl;
+            return false;
+        }
         return ret==0;
     }
 
+    uint64_t get_mod_base(std::string name){
+        kmod.name = const_cast<char*>(name.c_str());
+        int ret = ioctl(-1,cmd_mod,&kmod);
+        if(ret<0){
+            std::cout<<"get_mod_base error"<<std::endl;
+            return 0;
+        }
+        return kmod.base;
+    }
 
-    ~kernel();
+
 };
 
 
 
 #endif /* _KERNEL_H_ */
+
+
+////示例代码
+//int main() {
+//kernel k;
+//int pid = getPID("bin.mt.plus.canary");
+//if(pid<0){
+//std::cout<<"获取pid失败"<<std::endl;
+//return -1;
+//}
+//std::cout<<"pid:"<<pid<<std::endl;
+////                                       readcmd   keyvertify
+//int ret = k.cmd_ctl("apkey","55555","111");
+//if(ret<0){
+//std::cout<<"错误命令"<<std::endl;
+//return -1;
+//}
+//
+//k.init(0x55555,0x111);
+//k.set_pid(pid);
+//sleep(1);
+//std::cout<<"getModuleBase:"<<std::hex<<getModuleBase("libmt1.so",pid)<<std::endl;
+//uint64_t mod_base = k.get_mod_base("libmt1.so");
+//std::cout<<"mod_base:"<<std::hex<<mod_base<<std::endl;
+//int read_data = k.read<int>(mod_base);
+//printf("read_data:%d\n",read_data);
+//}
